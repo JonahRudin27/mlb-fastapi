@@ -148,7 +148,7 @@ class Model_Utils:
         cleaned_pitching.loc[:, 'Player'] = (
             cleaned_pitching['Player'].str.replace("*", "", regex=False)
         )
-        norm_params = pd.read_csv(os.path.join(os.path.dirname(__file__), "normalization_parm.csv"))
+        norm_params = pd.read_csv(os.path.join(os.path.dirname(__file__), "normalization_params.csv"))
 
         return cleaned_batting, cleaned_pitching, norm_params, model
 
