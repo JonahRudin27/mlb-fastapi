@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from app.model_utils import Model_Utils
+from app.kelly_optimizer import KellyOptimizer
 import logging
 from typing import Dict, Any
 import os
@@ -119,4 +120,37 @@ async def predict(
 
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/kelly-optimize")
+async def kelly_optimize(
+    payload: Dict[str, Any] = Body(...)
+):
+    """
+    Optimize bet allocations using the Kelly Criterion.
+    Expected JSON format:
+    {
+        "probabilities": [0.6, 0.55, 0.52],
+        "odds": [100, -110, 150],     // American odds
+        "kelly_fraction": 0.5
+    }
+    """
+    try:
+        probs = payload.get("probabilities")
+        odds = payload.get("odds")
+        kelly_fraction = payload.get("kelly_fraction", 1.0)
+
+        if not probs or not odds or len(probs) != len(odds):
+            raise HTTPException(status_code=400, detail="Invalid input: probs and odds must be equal-length lists")
+
+        optimizer = KellyOptimizer(probs, odds, kelly_fraction)
+        allocations = optimizer.kelly_portfolio()
+
+        return {
+            "allocations": [float(round(a, 6)) for a in allocations],
+            "total_fraction": float(round(sum(allocations), 6))
+        }
+
+    except Exception as e:
+        logger.error(f"Kelly optimizer error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

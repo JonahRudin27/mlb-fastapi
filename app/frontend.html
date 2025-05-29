@@ -285,6 +285,34 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #00e676;
         }
+
+        .optimize-button {
+            background-color: var(--dk-accent);
+            color: var(--dk-primary);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.2px;
+            text-transform: uppercase;
+            margin-top: 20px;
+        }
+
+        .optimize-button:hover {
+            background-color: #00e676;
+            transform: translateY(-1px);
+        }
+
+        #kelly-results h3 {
+            color: var(--dk-accent);
+            margin: 0 0 20px 0;
+            padding: 20px;
+            border-bottom: 1px solid var(--dk-border);
+        }
     </style>
 </head>
 <body>
@@ -356,6 +384,22 @@
                 <tbody id="results-body">
                 </tbody>
             </table>
+            <div class="action-buttons" style="margin-top: 20px;">
+                <button id="optimize-bets" class="optimize-button">Optimize Bet Sizes</button>
+            </div>
+            <div id="kelly-results" class="results-container" style="display: none; margin-top: 20px;">
+                <h3>Kelly Criterion Optimization</h3>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Bet</th>
+                            <th>Recommended Allocation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kelly-results-body">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -560,6 +604,99 @@
                     </tr>
                 `;
             }).join('');
+        });
+
+        // Kelly optimization
+        const optimizeBetsBtn = document.getElementById('optimize-bets');
+        const kellyResults = document.getElementById('kelly-results');
+        const kellyResultsBody = document.getElementById('kelly-results-body');
+
+        optimizeBetsBtn.addEventListener('click', async () => {
+            if (!await checkApiHealth()) {
+                alert("Cannot connect to API. Please make sure the server is running.");
+                return;
+            }
+
+            // Get all positive edge bets from the results
+            const bets = [];
+            const rows = document.querySelectorAll('#results-body tr');
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 8) {  // Valid result row
+                    const game = cells[0].textContent;
+                    const awayEdge = parseFloat(cells[5].textContent);
+                    const homeEdge = parseFloat(cells[6].textContent);
+                    
+                    // Get the original odds from the input form
+                    const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+                    const inputRow = document.querySelectorAll('#prediction-form tbody tr')[rowIndex];
+                    const awayOdds = parseFloat(inputRow.querySelectorAll('input')[5].value);
+                    const homeOdds = parseFloat(inputRow.querySelectorAll('input')[6].value);
+                    
+                    console.log(`Game: ${game}`);
+                    console.log(`Away Edge: ${awayEdge}, Odds: ${awayOdds}`);
+                    console.log(`Home Edge: ${homeEdge}, Odds: ${homeOdds}`);
+                    
+                    if (awayEdge > 0) {
+                        bets.push({
+                            probability: parseFloat(cells[3].textContent) / 100,
+                            odds: awayOdds
+                        });
+                    }
+                    if (homeEdge > 0) {
+                        bets.push({
+                            probability: parseFloat(cells[4].textContent) / 100,
+                            odds: homeOdds
+                        });
+                    }
+                }
+            });
+
+            if (bets.length === 0) {
+                alert("No positive edge bets found to optimize.");
+                return;
+            }
+
+            console.log('Sending to Kelly optimizer:', {
+                probabilities: bets.map(b => b.probability),
+                odds: bets.map(b => b.odds),
+                kelly_fraction: 0.5
+            });
+
+            try {
+                const response = await fetch(`${API_URL}/kelly-optimize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        probabilities: bets.map(b => b.probability),
+                        odds: bets.map(b => b.odds),
+                        kelly_fraction: 0.5  // Conservative half-Kelly
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to optimize bets');
+                }
+
+                const data = await response.json();
+                console.log('Kelly optimizer response:', data);
+                
+                // Display results
+                kellyResultsBody.innerHTML = bets.map((bet, i) => `
+                    <tr>
+                        <td>Bet ${i + 1}</td>
+                        <td>${(data.allocations[i] * 100).toFixed(2)}%</td>
+                    </tr>
+                `).join('');
+                
+                kellyResults.style.display = 'block';
+            } catch (err) {
+                console.error('Kelly optimizer error:', err);
+                alert(`Error optimizing bets: ${err.message}`);
+            }
         });
     </script>
 </body>
