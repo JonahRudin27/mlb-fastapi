@@ -403,7 +403,7 @@
         const serverStatus = document.getElementById("server-status");
         const addRowBtn = document.getElementById("add-row");
         const predictAllBtn = document.getElementById("predict-all");
-        const API_URL = "http://localhost:8000";
+        const API_URL = window.location.origin;  // This will automatically use the current domain
 
         function updateServerStatus(status) {
             serverStatus.className = `server-status ${status}`;
