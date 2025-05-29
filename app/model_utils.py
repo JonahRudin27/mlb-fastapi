@@ -119,18 +119,16 @@ class Model_Utils:
 
     def load_resources(self):
         model = joblib.load(os.path.join(os.path.dirname(__file__), "baseball_model.pkl"))
-        current_year = datetime.now().year
 
         batting_url = (
-            f"https://www.baseball-reference.com/leagues/MLB/{current_year}.shtml"
+            f"https://www.baseball-reference.com/leagues/MLB/2025.shtml"
         )
         tables = pd.read_html(batting_url)
         raw_batting = tables[0].iloc[:30]  # Only real teams
         cleaned_batting = self.clean_batting_table(raw_batting)
 
         pitching_url = (
-            f"https://www.baseball-reference.com/leagues/MLB/"
-            f"{current_year}-standard-pitching.shtml"
+            f"https://www.baseball-reference.com/leagues/MLB/2025-standard-pitching.shtml"
         )
         pitcher_stats = pd.read_html(pitching_url)
         raw_pitching = pitcher_stats[1]
