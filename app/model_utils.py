@@ -49,7 +49,7 @@ class Model_Utils:
 
     def pull_data(self, away_team, home_team, away_pitcher, home_pitcher):
         # Step 1: Load normalization parameters
-        norm_params = pd.read_csv(os.path.join(os.path.dirname(__file__), "normalization_parm.csv"))
+        norm_params = self.norm_params
 
         # Step 2: Build feature row
         home_data = (
@@ -148,7 +148,7 @@ class Model_Utils:
         cleaned_pitching.loc[:, 'Player'] = (
             cleaned_pitching['Player'].str.replace("*", "", regex=False)
         )
-        norm_params = pd.read_csv('normalization_params.csv', index_col=0)
+        norm_params = pd.read_csv(os.path.join(os.path.dirname(__file__), "normalization_parm.csv"))
 
         return cleaned_batting, cleaned_pitching, norm_params, model
 
