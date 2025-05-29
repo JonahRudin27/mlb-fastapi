@@ -29,7 +29,7 @@ class Model_Utils:
     
     def choose_bet(self, run_diff, std, runLine, away_odds, home_odds):
         logger.info("📈 Choosing bet based on model output...")
-        skew = run_diff / abs(run_diff) * 0.25
+        skew = run_diff / abs(run_diff) * -0.25
         run_dif_dist = skewnorm(a=skew, loc=run_diff, scale=std)
 
         p_away = 1 - run_dif_dist.cdf(-1 * runLine)
