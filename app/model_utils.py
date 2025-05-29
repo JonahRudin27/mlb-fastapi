@@ -3,14 +3,22 @@ import joblib
 import pandas as pd
 from datetime import datetime
 import os
+import logging
+import requests
+from io import StringIO
 
+logger = logging.getLogger(__name__)
 
 class Model_Utils:
     def __init__(self):
-        [self.cleaned_batting, 
-         self.cleaned_pitching, 
-         self.norm_params, 
-         self.model] = self.load_resources()
+        try:
+            [self.cleaned_batting, 
+             self.cleaned_pitching, 
+             self.norm_params, 
+             self.model] = self.load_resources()
+        except Exception as e:
+            logger.error(f"Failed to initialize Model_Utils: {str(e)}")
+            raise
         
     def predict(self, away_team, home_team, away_pitcher, home_pitcher):
         x = self.pull_data(away_team, home_team, away_pitcher, home_pitcher)
@@ -117,38 +125,78 @@ class Model_Utils:
         # Step 5: Predict
         return x_df.to_numpy()
 
-    def load_resources(self):
-        model = joblib.load(os.path.join(os.path.dirname(__file__), "baseball_model.pkl"))
-
-        batting_url = (
-            f"https://www.baseball-reference.com/leagues/MLB/2025.shtml"
-        )
-        tables = pd.read_html(batting_url)
-        raw_batting = tables[0].iloc[:30]  # Only real teams
-        cleaned_batting = self.clean_batting_table(raw_batting)
-
-        pitching_url = (
-            f"https://www.baseball-reference.com/leagues/MLB/2025-standard-pitching.shtml"
-        )
-        pitcher_stats = pd.read_html(pitching_url)
-        raw_pitching = pitcher_stats[1]
-
-        pitcher_columns = {
-            "Player",
-            "WAR",
-            "ERA+",
-            "FIP",
-            "WHIP",
-            "SO/BB"
+    def _fetch_url(self, url):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                         'AppleWebKit/537.36 (KHTML, like Gecko) '
+                         'Chrome/91.0.4472.124 Safari/537.36'
         }
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch {url}: {str(e)}")
+            raise
 
-        cleaned_pitching = raw_pitching[list(pitcher_columns)]
-        cleaned_pitching.loc[:, 'Player'] = (
-            cleaned_pitching['Player'].str.replace("*", "", regex=False)
-        )
-        norm_params = pd.read_csv(os.path.join(os.path.dirname(__file__), "normalization_params.csv"))
+    def load_resources(self):
+        try:
+            # Load model and normalization parameters
+            model_path = os.path.join(os.path.dirname(__file__), 
+                                    "baseball_model.pkl")
+            norm_path = os.path.join(os.path.dirname(__file__), 
+                                   "normalization_params.csv")
+            
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model file not found at {model_path}")
+            if not os.path.exists(norm_path):
+                raise FileNotFoundError(
+                    f"Normalization params not found at {norm_path}"
+                )
+                
+            model = joblib.load(model_path)
+            norm_params = pd.read_csv(norm_path)
 
-        return cleaned_batting, cleaned_pitching, norm_params, model
+            # Get current year for stats
+            current_year = datetime.now().year
+            
+            # Fetch current season stats
+            batting_url = (
+                f"https://www.baseball-reference.com/leagues/MLB/"
+                f"{current_year}.shtml"
+            )
+            html_content = self._fetch_url(batting_url)
+            tables = pd.read_html(StringIO(html_content))
+            raw_batting = tables[0].iloc[:30]  # Only real teams
+            cleaned_batting = self.clean_batting_table(raw_batting)
+
+            pitching_url = (
+                f"https://www.baseball-reference.com/leagues/MLB/"
+                f"{current_year}-standard-pitching.shtml"
+            )
+            html_content = self._fetch_url(pitching_url)
+            pitcher_stats = pd.read_html(StringIO(html_content))
+            raw_pitching = pitcher_stats[1]
+
+            pitcher_columns = {
+                "Player",
+                "WAR",
+                "ERA+",
+                "FIP",
+                "WHIP",
+                "SO/BB"
+            }
+
+            cleaned_pitching = raw_pitching[list(pitcher_columns)]
+            cleaned_pitching.loc[:, 'Player'] = (
+                cleaned_pitching['Player'].str.replace("*", "", regex=False)
+            )
+
+            return cleaned_batting, cleaned_pitching, norm_params, model
+            
+        except Exception as e:
+            logger.error(f"Error loading resources: {str(e)}")
+            raise
 
     def clean_batting_table(self, df):
         cols = [0, 3] + list(range(5, 22))  # Tm, R/G, PA–OPS+
