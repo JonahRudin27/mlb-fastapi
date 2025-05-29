@@ -11,6 +11,7 @@ import os
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.info("🔁 This log is printed at the top level")
 
 app = FastAPI(
     title="MLB Prediction API",
