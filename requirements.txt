@@ -4,3 +4,4 @@ jinja2
 joblib
 pandas
 scipy
+scikit-learn
