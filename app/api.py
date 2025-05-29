@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-from model_utils import Model_Utils
+from app.model_utils import Model_Utils
 import logging
 from typing import Dict, Any
 
