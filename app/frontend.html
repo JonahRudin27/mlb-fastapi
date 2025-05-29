@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MLB Predictor</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dk-primary: #000000;
+            --dk-secondary: #1a1a1a;
+            --dk-accent: #00c853;
+            --dk-text: #ffffff;
+            --dk-text-secondary: #b3b3b3;
+            --dk-success: #00c853;
+            --dk-error: #ff3d00;
+            --dk-warning: #ffd600;
+            --dk-border: #333333;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--dk-primary);
+            color: var(--dk-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: auto;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: var(--dk-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--dk-border);
+        }
+
+        .login-container h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .login-form input {
+            padding: 12px;
+            border: 1px solid var(--dk-border);
+            border-radius: 4px;
+            background-color: var(--dk-primary);
+            color: var(--dk-text);
+            font-size: 1rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: var(--dk-accent);
+            box-shadow: 0 0 0 2px rgba(0, 200, 83, 0.3);
+        }
+
+        .login-error {
+            color: var(--dk-error);
+            background-color: rgba(255, 61, 0, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid var(--dk-error);
+            display: none;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        h2 {
+            color: var(--dk-accent);
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            font-size: 2rem;
+        }
+
+        .server-status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .server-status.online {
+            background-color: rgba(0, 200, 83, 0.1);
+            color: var(--dk-success);
+            border: 1px solid var(--dk-success);
+        }
+
+        .server-status.offline {
+            background-color: rgba(255, 61, 0, 0.1);
+            color: var(--dk-error);
+            border: 1px solid var(--dk-error);
+        }
+
+        .server-status.checking {
+            background-color: rgba(255, 214, 0, 0.1);
+            color: var(--dk-warning);
+            border: 1px solid var(--dk-warning);
+        }
+
+        .spreadsheet-container {
+            background: var(--dk-secondary);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--dk-border);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .spreadsheet {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        .spreadsheet th {
+            background: var(--dk-primary);
+            color: var(--dk-text);
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid var(--dk-border);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .spreadsheet td {
+            padding: 8px;
+            border: 1px solid var(--dk-border);
+            background: var(--dk-secondary);
+        }
+
+        .spreadsheet input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--dk-border);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background-color: var(--dk-primary);
+            color: var(--dk-text);
+            transition: all 0.3s ease;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .spreadsheet input:focus {
+            outline: none;
+            border-color: var(--dk-accent);
+            box-shadow: 0 0 0 2px rgba(0, 200, 83, 0.3);
+        }
+
+        .spreadsheet input::placeholder {
+            color: var(--dk-text-secondary);
+            font-weight: 400;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: var(--dk-accent);
+            color: var(--dk-primary);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.2px;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #00e676;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background-color: #1a1a1a;
+            color: var(--dk-text-secondary);
+            cursor: not-allowed;
+            border: 1px solid var(--dk-border);
+        }
+
+        .results-container {
+            margin-top: 20px;
+            background: var(--dk-secondary);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--dk-border);
+            overflow-x: auto;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        .results-table th {
+            background: var(--dk-primary);
+            color: var(--dk-text);
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid var(--dk-border);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border: 1px solid var(--dk-border);
+            background: var(--dk-secondary);
+        }
+
+        .positive-edge {
+            color: var(--dk-success);
+        }
+
+        .negative-edge {
+            color: var(--dk-error);
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--dk-text-secondary);
+            font-weight: 500;
+            padding: 20px;
+        }
+
+        .error {
+            color: var(--dk-error);
+            background-color: rgba(255, 61, 0, 0.1);
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid var(--dk-error);
+            font-weight: 500;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dk-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--dk-accent);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00e676;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-screen" class="login-container">
+        <h2>MLB Predictor Login</h2>
+        <form id="login-form" class="login-form">
+            <input type="password" id="password" placeholder="Enter password" required>
+            <button type="submit">Login</button>
+            <div id="login-error" class="login-error">
+                Incorrect password. Please try again.
+            </div>
+        </form>
+    </div>
+
+    <div id="main-content" class="main-content">
+        <h2>MLB Game Prediction</h2>
+        <div id="server-status" class="server-status checking">
+            Checking server status...
+        </div>
+
+        <div class="action-buttons">
+            <button id="add-row">Add Game</button>
+            <button id="predict-all" disabled>Get Predictions</button>
+        </div>
+
+        <div class="spreadsheet-container">
+            <table class="spreadsheet" id="prediction-form">
+                <thead>
+                    <tr>
+                        <th>Away Team</th>
+                        <th>Home Team</th>
+                        <th>Away Pitcher</th>
+                        <th>Home Pitcher</th>
+                        <th>Run Line</th>
+                        <th>Away Odds</th>
+                        <th>Home Odds</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" placeholder="e.g., NYY" required></td>
+                        <td><input type="text" placeholder="e.g., BOS" required></td>
+                        <td><input type="text" placeholder="Full name" required></td>
+                        <td><input type="text" placeholder="Full name" required></td>
+                        <td><input type="number" step="0.5" placeholder="e.g., -1.5" required></td>
+                        <td><input type="number" placeholder="e.g., -110" required></td>
+                        <td><input type="number" placeholder="e.g., -110" required></td>
+                        <td><button class="remove-row">Remove</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="results" class="results-container" style="display: none;">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Game</th>
+                        <th>Expected Run Diff</th>
+                        <th>Std Dev</th>
+                        <th>Away Cover Prob</th>
+                        <th>Home Cover Prob</th>
+                        <th>Away Edge</th>
+                        <th>Home Edge</th>
+                        <th>Best Bet</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Password protection
+        const CORRECT_PASSWORD = "Jrudin1231"; // Change this to your desired password
+        const loginScreen = document.getElementById('login-screen');
+        const mainContent = document.getElementById('main-content');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+
+        // Check if already logged in
+        if (sessionStorage.getItem('isLoggedIn')) {
+            showMainContent();
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            
+            if (password === CORRECT_PASSWORD) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                showMainContent();
+            } else {
+                loginError.style.display = 'block';
+                document.getElementById('password').value = '';
+            }
+        });
+
+        function showMainContent() {
+            loginScreen.style.display = 'none';
+            mainContent.style.display = 'block';
+        }
+
+        // Add logout functionality
+        const logoutBtn = document.createElement('button');
+        logoutBtn.textContent = 'Logout';
+        logoutBtn.style.marginLeft = '10px';
+        logoutBtn.onclick = () => {
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        };
+        document.querySelector('.action-buttons').appendChild(logoutBtn);
+
+        const serverStatus = document.getElementById("server-status");
+        const addRowBtn = document.getElementById("add-row");
+        const predictAllBtn = document.getElementById("predict-all");
+        const API_URL = "http://localhost:8000";
+
+        function updateServerStatus(status) {
+            serverStatus.className = `server-status ${status}`;
+            switch (status) {
+                case 'online':
+                    serverStatus.textContent = '✅ Server is online';
+                    predictAllBtn.disabled = false;
+                    break;
+                case 'offline':
+                    serverStatus.textContent = '❌ Server is offline. Please start the server.';
+                    predictAllBtn.disabled = true;
+                    break;
+                case 'checking':
+                    serverStatus.textContent = '⏳ Checking server status...';
+                    predictAllBtn.disabled = true;
+                    break;
+            }
+        }
+
+        async function checkApiHealth() {
+            try {
+                updateServerStatus('checking');
+                const response = await fetch(`${API_URL}/health`);
+                if (!response.ok) {
+                    throw new Error('Server returned an error');
+                }
+                const data = await response.json();
+                if (data.status === "healthy" && data.model_loaded) {
+                    updateServerStatus('online');
+                    return true;
+                } else {
+                    updateServerStatus('offline');
+                    return false;
+                }
+            } catch (err) {
+                updateServerStatus('offline');
+                return false;
+            }
+        }
+
+        // Check server status every 5 seconds
+        setInterval(checkApiHealth, 5000);
+        // Initial check
+        checkApiHealth();
+
+        // Add new row
+        addRowBtn.addEventListener('click', () => {
+            const tbody = document.querySelector('#prediction-form tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" placeholder="e.g., NYY" required></td>
+                <td><input type="text" placeholder="e.g., BOS" required></td>
+                <td><input type="text" placeholder="Full name" required></td>
+                <td><input type="text" placeholder="Full name" required></td>
+                <td><input type="number" step="0.5" placeholder="e.g., -1.5" required></td>
+                <td><input type="number" placeholder="e.g., -110" required></td>
+                <td><input type="number" placeholder="e.g., -110" required></td>
+                <td><button class="remove-row">Remove</button></td>
+            `;
+            tbody.appendChild(newRow);
+        });
+
+        // Remove row
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-row')) {
+                const tbody = document.querySelector('#prediction-form tbody');
+                if (tbody.children.length > 1) {
+                    e.target.closest('tr').remove();
+                }
+            }
+        });
+
+        // Get predictions for all rows
+        predictAllBtn.addEventListener('click', async () => {
+            if (!await checkApiHealth()) {
+                alert("Cannot connect to API. Please make sure the server is running.");
+                return;
+            }
+
+            const resultsDiv = document.getElementById('results');
+            const resultsBody = document.getElementById('results-body');
+            resultsBody.innerHTML = '<tr><td colspan="8" class="loading">⏳ Loading predictions...</td></tr>';
+            resultsDiv.style.display = 'block';
+
+            const rows = document.querySelectorAll('#prediction-form tbody tr');
+            const predictions = [];
+
+            for (const row of rows) {
+                const inputs = row.querySelectorAll('input');
+                const params = new URLSearchParams({
+                    away_team: inputs[0].value.trim(),
+                    home_team: inputs[1].value.trim(),
+                    away_pitcher: inputs[2].value.trim(),
+                    home_pitcher: inputs[3].value.trim(),
+                    runLine: inputs[4].value,
+                    away_odds: inputs[5].value,
+                    home_odds: inputs[6].value
+                });
+
+                try {
+                    const response = await fetch(`${API_URL}/predict?${params.toString()}`);
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || 'API request failed');
+                    }
+                    
+                    predictions.push({
+                        game: `${inputs[0].value} @ ${inputs[1].value}`,
+                        ...data
+                    });
+                } catch (err) {
+                    predictions.push({
+                        game: `${inputs[0].value} @ ${inputs[1].value}`,
+                        error: err.message || 'Failed to get prediction'
+                    });
+                }
+            }
+
+            // Display results
+            resultsBody.innerHTML = predictions.map(pred => {
+                if (pred.error) {
+                    return `
+                        <tr>
+                            <td>${pred.game}</td>
+                            <td colspan="7" class="error">
+                                ❌ Error: ${pred.error}
+                                <br>
+                                <small>Please check team names and pitcher names are correct (Names must include accents)</small>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                const rec = pred.bet_recommendation;
+                const bestBet = rec.away_profitability > rec.home_profitability
+                    ? "Bet on Away Team"
+                    : "Bet on Home Team";
+
+                return `
+                    <tr>
+                        <td>${pred.game}</td>
+                        <td>${pred.y_pred.toFixed(3)}</td>
+                        <td>${pred.y_std.toFixed(3)}</td>
+                        <td>${(rec.p_away * 100).toFixed(2)}%</td>
+                        <td>${(rec.p_home * 100).toFixed(2)}%</td>
+                        <td class="${rec.away_profitability > 0 ? 'positive-edge' : 'negative-edge'}">
+                            ${(rec.away_profitability * 100).toFixed(2)}%
+                        </td>
+                        <td class="${rec.home_profitability > 0 ? 'positive-edge' : 'negative-edge'}">
+                            ${(rec.home_profitability * 100).toFixed(2)}%
+                        </td>
+                        <td>${bestBet}</td>
+                    </tr>
+                `;
+            }).join('');
+        });
+    </script>
+</body>
+</html>
